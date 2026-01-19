@@ -19,6 +19,54 @@ import gc
 from functools import lru_cache
 import io  # 添加io模块导入
 
+# 日志记录器相关代码
+
+def setupLogger(name, level=logging.INFO):
+    """设置日志记录器，所有模块共享一个日志文件"""
+    # 创建logs目录
+    logsDir = "logs"
+    if not os.path.exists(logsDir):
+        os.makedirs(logsDir)
+
+    # 创建格式化的日志文件名（包含毫秒）
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # 保留毫秒（去掉微秒的后三位）
+    logPath = os.path.join(logsDir, f"HelldiverAutoAssets_{timestamp}.log")
+
+    # 创建logger
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    # 创建文件处理器 - 只在第一次创建时添加
+    if not hasattr(setupLogger, 'log_file_path'):
+        setupLogger.logFilePath = logPath
+        fileHandler = logging.FileHandler(logPath, encoding='utf-8')
+        fileHandler.setLevel(level)
+
+        # 创建控制台处理器
+        consoleHandler = logging.StreamHandler()
+        consoleHandler.setLevel(level)
+
+        # 创建格式器
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fileHandler.setFormatter(formatter)
+        consoleHandler.setFormatter(formatter)
+
+        # 添加处理器到logger
+        logger.addHandler(fileHandler)
+        logger.addHandler(consoleHandler)
+    else:
+        # 如果不是第一次创建，使用已存在的日志文件路径
+        fileHandler = logging.FileHandler(setupLogger.logFilePath, encoding='utf-8')
+        fileHandler.setLevel(level)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fileHandler.setFormatter(formatter)
+        logger.addHandler(fileHandler)
+
+    return logger
+
+# 定义不同模块的日志记录器 - 全部使用同一个日志文件
+mainLogger = setupLogger('main_app')
+
 # 加载配置文件
 configDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Config")
 
