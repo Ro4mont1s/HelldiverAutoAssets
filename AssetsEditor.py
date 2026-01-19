@@ -4,7 +4,7 @@ import json
 import os
 
 # -------------------------- 全局配置 & 工具函数 --------------------------
-# 使用绝对路径
+# 基于__file__构建绝对路径，确保在任何工作目录下都能正确访问资源文件
 scriptDir = os.path.dirname(os.path.abspath(__file__))
 configDir = os.path.join(scriptDir, "Config")
 # 默认使用简体中文配置文件
