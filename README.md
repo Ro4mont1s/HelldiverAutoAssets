@@ -23,6 +23,7 @@ pip install -r requirements.txt
 
 ## 使用方法
 
+从https://github.com/tesseract-ocr/tessdoc下载tesseract-ocr的安装包，勾选你想要使用的语言并安装，然后将程序根目录添加到系统path
 运行主程序：
 ```bash
 python HelldiverAutoAssets.py
