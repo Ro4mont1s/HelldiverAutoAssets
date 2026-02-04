@@ -74,8 +74,29 @@ configDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Config")
 def loadJson(filePath):
     """加载 JSON 文件"""
     try:
+        print(f"[FILE_READ] 正在读取配置文件: {filePath}")
+        mainLogger.info(f"正在读取配置文件: {filePath}")
         with open(filePath, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            data = json.load(f)
+            print(f"[FILE_READ] 成功读取配置文件: {filePath}")
+            mainLogger.info(f"成功读取配置文件: {filePath}")
+            
+            # 详细输出读取到的所有项
+            if isinstance(data, dict):
+                print(f"[CONTENT] 文件 {os.path.basename(filePath)} 包含以下内容:")
+                print("=" * 50)
+                for key, value in data.items():
+                    if isinstance(value, dict):
+                        print(f"  {key} (包含{len(value)}个子项):")
+                        for sub_key, sub_value in list(value.items())[:10]:  # 只显示前10个子项避免输出过长
+                            print(f"    - {sub_key}: {sub_value}")
+                        if len(value) > 10:
+                            print(f"    ... 还有 {len(value) - 10} 个子项")
+                    else:
+                        print(f"  {key}: {value}")
+                print("=" * 50)
+                mainLogger.info(f"配置文件 {os.path.basename(filePath)} 包含键数量: {len(data)}")
+            return data
     except FileNotFoundError:
         mainLogger.error(f"未找到配置文件 {filePath}")
         print(f"错误：未找到配置文件 {filePath}")
@@ -225,14 +246,62 @@ def safe_set_stdout_encoding():
 # 调用安全设置函数
 safe_set_stdout_encoding()
 
-@lru_cache(maxsize=128)  # 缓存资产文本加载结果
 def loadAssetsText():
     """加载assetsData中的【左侧中文文本】作为对比库 加载所有分类（Map, Player下的R/G/B）"""
     global assetsData
-    # 仅在必要时重新加载配置文件
+    print("[ASSETS_LOAD] 开始执行loadAssetsText函数")
+    mainLogger.info("开始执行loadAssetsText函数")
+    # 每次都重新加载配置文件，确保获取最新数据
     try:
-        if not isinstance(assetsData, dict):
+        # 重新加载Assets配置文件以获取最新数据
+        assetsConfigPath = getAssetsConfigPath()
+        print(f"[ASSETS_LOAD] 准备加载Assets配置文件: {assetsConfigPath}")
+        mainLogger.info(f"准备加载Assets配置文件: {assetsConfigPath}")
+        freshAssetsData = loadJson(assetsConfigPath)
+        
+        if not isinstance(freshAssetsData, dict):
             raise ValueError("assetsData 格式不正确，必须是字典类型")
+        
+        # 更新全局assetsData变量
+        global assetsData
+        assetsData = freshAssetsData
+        print(f"[ASSETS_LOAD] 全局assetsData已更新，包含 {len(assetsData)} 个顶级键")
+        mainLogger.info(f"全局assetsData已更新，包含 {len(assetsData)} 个顶级键")
+        
+        # 详细显示所有读取到的项
+        print("[ASSETS_CONTENT] 详细内容分析:")
+        print("-" * 40)
+        total_items = 0
+        
+        # 显示Map分类的所有项
+        if "Map" in assetsData and isinstance(assetsData["Map"], dict):
+            map_items = list(assetsData["Map"].keys())
+            total_items += len(map_items)
+            print(f"Map分类 ({len(map_items)}项):")
+            for i, item in enumerate(map_items, 1):
+                command = assetsData["Map"][item]
+                print(f"  {i}. {item} -> {command}")
+        
+        # 显示Player分类的所有项
+        if "Player" in assetsData and isinstance(assetsData["Player"], dict):
+            print(f"Player分类:")
+            player_keys = list(assetsData["Player"].keys())
+            for sub_cat in player_keys:
+                if isinstance(assetsData["Player"][sub_cat], dict):
+                    sub_items = list(assetsData["Player"][sub_cat].keys())
+                    total_items += len(sub_items)
+                    print(f"  {sub_cat}子分类 ({len(sub_items)}项):")
+                    for i, item in enumerate(sub_items[:15], 1):  # 只显示前15个避免过长
+                        command = assetsData["Player"][sub_cat][item]
+                        print(f"    {i}. {item} -> {command}")
+                    if len(sub_items) > 15:
+                        print(f"    ... 还有 {len(sub_items) - 15} 项")
+        
+        print("-" * 40)
+        print(f"[ASSETS_SUMMARY] 总计读取到 {total_items} 个可识别项")
+        mainLogger.info(f"Map分类包含 {len(map_items) if 'Map' in locals() else 0} 项")
+        mainLogger.info(f"Player分类包含 {total_items - (len(map_items) if 'Map' in locals() else 0)} 项")
+        
         # 加载所有分类：Map, Player下的R/G/B
         combinedAssets = {}
         # 处理Map顶层分类
@@ -243,7 +312,8 @@ def loadAssetsText():
             for subCat in ["R", "G", "B"]:
                 if subCat in assetsData["Player"] and isinstance(assetsData["Player"][subCat], dict):
                     combinedAssets.update(assetsData["Player"][subCat])
-        ocrLogger.info(f"成功加载对比文本数量：{len(combinedAssets)} 条")
+        print(f"[ASSETS_FINAL] 最终合并的对比文本数量：{len(combinedAssets)} 条")
+        mainLogger.info(f"成功加载对比文本数量：{len(combinedAssets)} 条")
         return combinedAssets
     except Exception as e:
         ocrLogger.error(f"加载配置数据失败：{str(e)}")
@@ -479,10 +549,24 @@ def captureScreenshotsToMemory():
 
 def runOcrRecognition(screenshots):
     """执行OCR识别流程，接收内存中的截图列表"""
+    print("=" * 60)
+    print("[DEBUG] 开始OCR识别流程")
     ocrLogger.info("开始OCR识别流程")
-    # 步骤1：加载JSON中【左侧的中文文本】
-    assetsData = loadAssetsText()
-    if not assetsData:
+    # 步骤1：重新加载配置文件并加载JSON中【左侧的中文文本】
+    # 确保获取最新的配置数据
+    print("[DEBUG] 重新加载所有配置文件...")
+    global basicConfig, assetsData
+    print(f"[DEBUG] 重新加载基础配置: {vanillaConfigPath}")
+    basicConfig = loadJson(vanillaConfigPath)
+    print(f"[DEBUG] 基础配置加载完成，ocr_language = {basicConfig.get('ocr_language', 'NOT_FOUND')}")
+    assetsConfigPath = getAssetsConfigPath()
+    print(f"[DEBUG] 重新加载Assets配置: {assetsConfigPath}")
+    assetsData = loadJson(assetsConfigPath)
+    print(f"[DEBUG] Assets配置加载完成，包含 {len(assetsData)} 个顶级键")
+    
+    # 加载对比文本
+    comparisonData = loadAssetsText()
+    if not comparisonData:
         ocrLogger.error("程序退出：无有效对比文本")
         print("程序退出：无有效对比文本")
         return
@@ -493,7 +577,7 @@ def runOcrRecognition(screenshots):
     # 顺序处理内存中的截图，避免同时处理过多图片占用内存
     for i, screenshot in enumerate(screenshots):
         imageName = f"screenshot{i+1}.png"
-        processImageFromMemory(screenshot, imageName, assetsData, localTesseractResults)
+        processImageFromMemory(screenshot, imageName, comparisonData, localTesseractResults)
 
     # 将识别结果存储到全局变量中
     global tesseractResults
