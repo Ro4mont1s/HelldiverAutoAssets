@@ -20,9 +20,9 @@
 ```bash
 pip install -r requirements.txt
 ```
-从https://github.com/tesseract-ocr/tessdoc下载tesseract-ocr的安装包
-勾选你想要使用的语言并安装
-将程序根目录添加到系统path
+从https://github.com/tesseract-ocr/tessdoc下载tesseract-ocr的安装包  
+勾选你想要使用的语言并安装  
+将程序根目录添加到系统path  
 
 ## 系统设置
 
