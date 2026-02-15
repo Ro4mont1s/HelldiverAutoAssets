@@ -20,10 +20,24 @@
 ```bash
 pip install -r requirements.txt
 ```
+从https://github.com/tesseract-ocr/tessdoc下载tesseract-ocr的安装包
+勾选你想要使用的语言并安装
+将程序根目录添加到系统path
+
+## 系统设置
+
+显示器分辨率比例应为16：9
+字体设置为微软雅黑
+
+## 游戏内设置
+
+显示模式设置为无边框全屏
+HUD-HUD弧度：0
+HUD-HUD不透明度：高
+HUD-HUD大小：0.90
 
 ## 使用方法
 
-从https://github.com/tesseract-ocr/tessdoc下载tesseract-ocr的安装包，勾选你想要使用的语言并安装，然后将程序根目录添加到系统path
 运行主程序：
 ```bash
 python HelldiverAutoAssets.py
