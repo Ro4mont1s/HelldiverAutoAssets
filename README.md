@@ -31,10 +31,10 @@ pip install -r requirements.txt
 
 ## 游戏内设置
 
-显示模式设置为无边框全屏
-HUD-HUD弧度：0
-HUD-HUD不透明度：高
-HUD-HUD大小：0.90
+1. 显示模式设置为无边框全屏
+2. HUD-HUD弧度：0
+3. HUD-HUD不透明度：高
+4. HUD-HUD大小：0.90
 
 ## 使用方法
 
